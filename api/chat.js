@@ -1,10 +1,8 @@
 export default async function handler(req, res) {
 
-  // ----- CORS -----
   res.setHeader("Access-Control-Allow-Origin", "https://aipromptsforseniors.com");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  res.setHeader("Access-Control-Max-Age", "86400");
 
   if (req.method === "OPTIONS") {
     return res.status(200).end();
@@ -22,10 +20,6 @@ export default async function handler(req, res) {
 
     const { messages } = req.body;
 
-    if (!messages || !Array.isArray(messages)) {
-      return res.status(400).json({ error: "Valid messages array required." });
-    }
-
     const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -34,45 +28,32 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
+        messages,
         temperature: 0.7,
-        messages: [
-          {
-            role: "system",
-            content: `
-You are generating responses for a senior-friendly web application.
-
-IMPORTANT INSTRUCTIONS:
-- Always format your response using clean HTML.
-- Use <h3> for section headings.
-- Use <ol> or <ul> for lists.
-- Use <li> for list items.
-- Use <strong> for important values.
-- Use <p> for paragraphs.
-- Do NOT use Markdown.
-- Do NOT use backticks.
-- Return only clean HTML.
-`
-          },
-          ...messages
-        ]
+        stream: true
       })
     });
 
-    const data = await openaiResponse.json();
+    res.writeHead(200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive"
+    });
 
-    if (!openaiResponse.ok) {
-      return res.status(openaiResponse.status).json({
-        error: data.error?.message || "OpenAI API error"
-      });
+    const reader = openaiResponse.body.getReader();
+    const decoder = new TextDecoder();
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const chunk = decoder.decode(value);
+      res.write(chunk);
     }
 
-    return res.status(200).json({
-      reply: data.choices?.[0]?.message?.content || "No response"
-    });
+    res.end();
 
   } catch (error) {
-    return res.status(500).json({
-      error: error.message || "Internal server error"
-    });
+    res.status(500).json({ error: error.message });
   }
 }
