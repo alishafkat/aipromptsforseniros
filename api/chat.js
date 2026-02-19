@@ -33,9 +33,28 @@ export default async function handler(req, res) {
         "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini", // cheaper + stable for testing
-        messages,
-        temperature: 0.7
+        model: "gpt-4o-mini",
+        temperature: 0.7,
+        messages: [
+          {
+            role: "system",
+            content: `
+You are generating responses for a senior-friendly web application.
+
+IMPORTANT INSTRUCTIONS:
+- Always format your response using clean HTML.
+- Use <h3> for section headings.
+- Use <ol> or <ul> for lists.
+- Use <li> for list items.
+- Use <strong> for important values.
+- Use <p> for paragraphs.
+- Do NOT use Markdown.
+- Do NOT use backticks.
+- Return only clean HTML.
+`
+          },
+          ...messages
+        ]
       })
     });
 
