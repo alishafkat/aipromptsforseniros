@@ -25,14 +25,13 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Valid messages array required." });
     }
 
-    // ===== Convert chat history into single prompt =====
+    // Convert conversation into plain text prompt
     const prompt = messages
       .map(m => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
       .join("\n");
 
-    // ===== CALL GEMINI (Stable Model) =====
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash-001:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
         headers: {
