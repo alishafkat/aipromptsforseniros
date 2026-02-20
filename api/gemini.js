@@ -1,5 +1,6 @@
 export default async function handler(req, res) {
 
+  // ===== CORS =====
   res.setHeader("Access-Control-Allow-Origin", "https://aipromptsforseniors.com");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -24,22 +25,29 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Valid messages array required." });
     }
 
-    // Convert chat messages into one prompt
+    // ===== Convert chat history into single prompt =====
     const prompt = messages
       .map(m => `${m.role === "user" ? "User" : "Assistant"}: ${m.content}`)
       .join("\n");
 
+    // ===== CALL GEMINI (Stable Model) =====
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json"
+        },
         body: JSON.stringify({
           contents: [
             {
               parts: [{ text: prompt }]
             }
-          ]
+          ],
+          generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 2048
+          }
         })
       }
     );
